@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+body {
+  font-family: 'Inter', sans-serif;
+  /* Yazıların daha kəskin və səliqəli görünməsi üçün: */
+  -webkit-font-smoothing: antialiased; 
+  background-color: #FBF8F2; /* Arxa fonun ağ qalmaması üçün */
+}
