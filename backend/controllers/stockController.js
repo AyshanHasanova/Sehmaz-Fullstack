@@ -1,69 +1,59 @@
+import dotenv from 'dotenv'; // 1. Bura əlavə edildi
+import axios from 'axios';
 import Stock from '../models/Stock.js';
 import Candle from '../models/Candle.js';
-import axios from 'axios';
+
+// Konfiqurasiya
+dotenv.config({ path: "config/config.env" }); 
+
 import { 
-    getStockQuote, 
     getCompanyNews, 
     getTwelveDataCandles, 
     searchSymbols 
 } from '../services/finnhubService.js';
 
 /**
- * 1. Cari Qiymət və Detallar (Cache məntiqi ilə)
- * Finnhub-dan anlıq qiyməti çəkir və 5 dəqiqəlik MongoDB cache tətbiq edir.
+ * 1. Bütün Səhmlərin Siyahısı
  */
-export const getStockDetails = async (req, res) => {
+export const getAllStocks = async (req, res) => {
     try {
-        const symbol = req.params.symbol.toUpperCase();
-        let stock = await Stock.findOne({ symbol });
-        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
-
-        // Əgər bazada varsa və yenidirsə, bazadan qaytar
-        if (stock && stock.lastUpdated > fiveMinutesAgo) {
-            return res.status(200).json({ success: true, source: "database", data: stock });
-        }
-
-        // Finnhub-dan yeni qiyməti al
-        const finnhubData = await getStockQuote(symbol);
-
-        if (!finnhubData || !finnhubData.c) {
-            return res.status(404).json({ success: false, message: "Qiymət məlumatı tapılmadı" });
-        }
-
-        // Bazada yenilə və ya yoxdursa yarat
-        stock = await Stock.findOneAndUpdate(
-            { symbol },
-            {
-                currentPrice: finnhubData.c,
-                highPrice: finnhubData.h,
-                lowPrice: finnhubData.l,
-                openPrice: finnhubData.o,
-                previousClose: finnhubData.pc,
-                lastUpdated: new Date()
-            },
-            { returnDocument: 'after', upsert: true } // 'new: true' yerinə müasir standart
-        );
-
-        res.status(200).json({ success: true, source: "finnhub", data: stock });
+        const stocks = await Stock.find({}).sort({ lastUpdated: -1 });
+        res.status(200).json({ success: true, count: stocks.length, data: stocks });
     } catch (error) {
-        console.error("STOK DETALI XƏTASI:", error.message);
-        res.status(500).json({ 
-            success: false, 
-            message: "Səhm məlumatı alınmadı", 
-            error: error.message 
-        });
+        res.status(500).json({ success: false, message: "Siyahı alınarkən xəta baş verdi" });
     }
 };
 
 /**
- * 2. Qrafik Dataları (Candles)
- * Səhmlər (Twelve Data) və Kripto (Binance) üçün 24 saatlıq cache ilə qrafik datası.
+ * 2. Cari Qiymət və Detallar
+ */
+export const getStockDetails = async (req, res) => {
+    try {
+        const { symbol } = req.params;
+        const symbolUpper = symbol.toUpperCase();
+        const stock = await Stock.findOne({ symbol: symbolUpper });
+        
+        const profile = await axios.get(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbolUpper}&token=${process.env.FINNHUB_KEY}`);
+
+        res.json({
+            success: true,
+            data: {
+                ...stock?._doc,
+                name: profile.data.name || symbolUpper,
+                description: profile.data.ticker ? `${profile.data.name} is a leader in ${profile.data.finnhubIndustry} sector.` : "Məlumat tapılmadı"
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+/**
+ * 3. Qrafik Dataları (Candles)
  */
 export const getCandleDetails = async (req, res) => {
     try {
         const symbol = req.params.symbol.toUpperCase();
-        
-        // Cache yoxlanışı (24 saat)
         let candles = await Candle.findOne({ symbol });
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         
@@ -72,7 +62,7 @@ export const getCandleDetails = async (req, res) => {
         }
 
         let candleData;
-        const isCrypto = symbol.includes('BTC') || symbol.includes('ETH') || symbol.includes('USDT') || symbol.includes('BINANCE:');
+        const isCrypto = symbol.includes('BTC') || symbol.includes('ETH') || symbol.includes('USDT');
 
         if (isCrypto) {
             const cleanSymbol = symbol.replace('BINANCE:', '').replace('/', '').replace('-', '');
@@ -96,63 +86,122 @@ export const getCandleDetails = async (req, res) => {
 
         const updatedCandles = await Candle.findOneAndUpdate(
             { symbol },
-            { 
-                data: candleData, 
-                lastUpdated: new Date() 
-            },
-            { returnDocument: 'after', upsert: true } // 'new: true' yerinə müasir standart
+            { data: candleData, lastUpdated: new Date() },
+            { returnDocument: 'after', upsert: true }
         );
 
         res.status(200).json({ success: true, source: "external_api", data: updatedCandles.data });
 
     } catch (error) {
-        console.error("CANDLE ERROR:", error.message);
-        res.status(500).json({ success: false, message: "Server xətası", details: error.message });
+        res.status(500).json({ success: false, message: "Server xətası baş verdi" });
     }
 };
 
 /**
- * 3. Şirkət Xəbərləri
+ * 4. Şirkət Xəbərləri
  */
 export const getStockNews = async (req, res) => {
     try {
         const { symbol } = req.params;
         const news = await getCompanyNews(symbol.toUpperCase());
-        
-        if (!news || news.length === 0) {
-            return res.status(200).json({ success: true, message: "Xəbər tapılmadı", data: [] });
-        }
-
-        res.status(200).json({ success: true, data: news.slice(0, 10) }); 
+        res.status(200).json({ success: true, data: news ? news.slice(0, 10) : [] }); 
     } catch (error) {
-        console.error("XƏBƏR XƏTASI:", error.message);
-        res.status(500).json({ 
-            success: false, 
-            message: "Xəbərlər alınmadı", 
-            error: error.message 
-        });
+        res.status(500).json({ success: false, message: "Xəbərlər alınarkən xəta baş verdi" });
     }
 };
 
 /**
- * 4. Simvol Axtarışı
+ * 5. Simvol Axtarışı
  */
 export const searchStocks = async (req, res) => {
     try {
         const { q } = req.query;
-        if (!q) {
-            return res.status(400).json({ success: false, message: "Axtarış sözü daxil edilməyib" });
-        }
+        if (!q) return res.status(400).json({ success: false, message: "Axtarış sözü daxil edin" });
 
         const results = await searchSymbols(q);
-        
         res.status(200).json({ 
             success: true, 
             count: results.count, 
             data: results.result.slice(0, 10) 
         });
     } catch (error) {
-        console.error("SEARCH ERROR:", error.message);
-        res.status(500).json({ success: false, message: "Axtarış zamanı xəta baş verdi" });
+        res.status(500).json({ success: false, message: "Axtarış xətası baş verdi" });
     }
 };
+
+/**
+ * 6. Simulyator (Zaman Maşını)
+ */
+/**
+ * Simulyator (Zaman Maşını) - Finnhub API vasitəsilə
+ */
+// stockController.js daxilində simulateInvestment funksiyasını bununla əvəz et:
+
+export const simulateInvestment = async (req, res) => {    
+    try {
+        const { symbol, amount, date } = req.body;
+        const symbolUpper = symbol.toUpperCase().trim();
+        const invAmount = parseFloat(amount);
+
+        // 1. DB Yoxlaması
+        const stockInfo = await Stock.findOne({ symbol: symbolUpper });
+        if (!stockInfo) {
+            return res.status(404).json({ success: false, message: "Bu səhm bazada tapılmadı." });
+        }
+
+        const TWELVE_DATA_KEY = process.env.TWELVE_DATA_KEY;
+        
+        // 2. TwelveData Sorğusu (Təkmilləşdirilmiş)
+        const response = await axios.get(`https://api.twelvedata.com/time_series`, {
+            params: {
+                symbol: symbolUpper,
+                interval: '1day',
+                start_date: `${date} 09:30:00`,
+                end_date: `${date} 16:00:00`,
+                apikey: TWELVE_DATA_KEY,
+                dp: 2 // Ondalıq hissəni dəqiqləşdirir
+            }
+        });
+        console.log(response.data);
+
+        const data = response.data;
+
+        // Xəta yoxlaması
+        if (data.status === 'error' || !data.values || data.values.length === 0) {
+             return res.status(404).json({ 
+                success: false, 
+                message: "Tarixi qiymət alınmadı. Tarixi və ya simvolu yoxlayın." 
+            });
+        }
+
+        // 3. Hesablamalar
+        const historicalPrice = parseFloat(data.values[0].close);
+        const currentPrice = stockInfo.currentPrice; // Bazadakı qiymət
+
+        const stockCount = invAmount / historicalPrice;
+        const currentValue = stockCount * currentPrice;
+        const profit = currentValue - invAmount;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                symbol: symbolUpper,
+                name: stockInfo.name || symbolUpper,
+                investmentAmount: invAmount,
+                historicalPrice: historicalPrice.toFixed(2),
+                currentPrice: currentPrice.toFixed(2),
+                profit: profit.toFixed(2),
+                profitPercentage: ((profit / invAmount) * 100).toFixed(2),
+                isProfit: profit >= 0
+            }
+        });
+
+    } catch (error) {
+        console.error("SIMULATION ERROR:", error.message);
+        return res.status(500).json({ success: false, message: "Server daxili xətası." });
+    }
+};
+
+
+
+

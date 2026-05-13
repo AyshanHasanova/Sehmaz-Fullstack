@@ -13,10 +13,18 @@ const app = express();
 connectDatabase();
 
 app.use(express.json());
-app.use(cors());
+app.use(express.urlencoded({ extended: true }));
+// app.use(cors());
+
+app.use(cors({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Marşrutlar
 app.use('/api/stocks', stockRoutes);
+
 
 app.get("/", (req, res) => {
     res.send("SEHMAZ Backend API işləyir!");

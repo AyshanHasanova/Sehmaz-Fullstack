@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 
 dotenv.config({ path: "config/config.env" }); 
 
+// API limitlərini qorumaq üçün (Saniyədə 1 sorğu)
 const limiter = new Bottleneck({
     minTime: 1000, 
 });
@@ -11,7 +12,7 @@ const limiter = new Bottleneck({
 const finnhubClient = axios.create({
     baseURL: 'https://finnhub.io/api/v1',
     params: {
-        token:process.env.FINNHUB_KEY // Düzəldildi
+        token: process.env.FINNHUB_KEY
     }
 });
 
@@ -24,23 +25,6 @@ export const getStockQuote = limiter.wrap(async (symbol) => {
     } catch (error) {
         console.error(`Finnhub Quote Error (${symbol}):`, error.message);
         return null;
-    }
-});
-
-export const getStockCandles = limiter.wrap(async (symbol, resolution, from, to) => {
-    try {
-        const response = await finnhubClient.get('/stock/candle', {
-            params: {
-                symbol: symbol.toUpperCase(),
-                resolution,
-                from,
-                to
-            }
-        });
-        return response.data;
-    } catch (error) {
-        console.error(`Finnhub Candle Error (${symbol}):`, error.message);
-        return { s: "error" };
     }
 });
 
@@ -70,12 +54,11 @@ export const getTwelveDataCandles = limiter.wrap(async (symbol) => {
                 symbol: symbol.toUpperCase(),
                 interval: '1day',
                 outputsize: 30,
-                apikey:process.env.TWELVE_DATA_KEY// Düzəldildi
+                apikey: process.env.TWELVE_DATA_KEY
             }
         });
 
         if (response.data.status !== "ok" || !response.data.values) {
-            console.warn(`Twelve Data Warning (${symbol}):`, response.data.message);
             return { s: "no_data" };
         }
 
@@ -96,8 +79,13 @@ export const getTwelveDataCandles = limiter.wrap(async (symbol) => {
 });
 
 export const searchSymbols = limiter.wrap(async (query) => {
-    const response = await finnhubClient.get('/search', {
-        params: { q: query }
-    });
-    return response.data;
+    try {
+        const response = await finnhubClient.get('/search', {
+            params: { q: query }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Finnhub Search Error:", error.message);
+        return { count: 0, result: [] };
+    }
 });

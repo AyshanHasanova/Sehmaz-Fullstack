@@ -1,25 +1,35 @@
 import express from 'express';
+import cors from 'cors';
 import { 
     getStockDetails, 
     getCandleDetails, 
     getStockNews ,
-    searchStocks
+    searchStocks,
+    getAllStocks ,
+ 
+    simulateInvestment
 } from '../controllers/stockController.js';
 
 const router = express.Router();
 
+// 1. Statik və xüsusi yollar hər zaman yuxarıda olmalıdır
+router.get('/', getAllStocks);
 router.get('/search', searchStocks);
+router.all('/debug', (req, res) => res.send("Debug işləyir!"));
 
-// 1. Şirkət xəbərləri (/:symbol/news)
+// --- BU SƏTRİ YUXARI QALDIRIN ---
+router.options('/simulate', cors());
+router.post('/simulate', (req,res,next)=>{
+    console.log("SIMULATE ROUTE HIT");
+    next();
+ }, simulateInvestment);
+// -------------------------------
+
+router.get('/details/:symbol', getStockDetails);
 router.get('/:symbol/news', getStockNews);
-
-// 2. Qrafik datası (/:symbol/candles)
 router.get('/:symbol/candles', getCandleDetails);
 
-// 3. Əsas səhm məlumatı (/:symbol)
-// QEYD: Bu ən sonda olmalıdır ki, digər yolları "udmasın"
+// 2. Ən ümumi/dinamik yol (həmişə ən sonda)
 router.get('/:symbol', getStockDetails);
-// Axtarış marşrutu (Vacib: bunu /:symbol-dan yuxarıda yaz!)
-
 
 export default router;
