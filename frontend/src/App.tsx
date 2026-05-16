@@ -38,6 +38,7 @@ import Home from './pages/Home/Home'; // Home səhifəsini import edin
 import Learn from './pages/Learn/Learn';
 import Kesf from './pages/Explore/Kesf';
 import Simulator from './components/Simulator';
+import ArticleDetail from './components/ArticleDetail';
 
 function App() {
   return (
@@ -51,8 +52,10 @@ function App() {
             
             <Route path="/explore" element={<Kesf/>} />
             <Route path="/learn" element={<Learn/>} />
+            <Route path="/learn/:slug" element={<ArticleDetail />} />
             <Route path="/simulator" element={<Simulator/>} />
             <Route path="*" element={<div className="p-10 text-center text-red-500">Səhifə tapılmadı!</div>} />
+
           </Routes>
         </main>
         <Footer/>
