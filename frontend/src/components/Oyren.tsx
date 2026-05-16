@@ -1,46 +1,38 @@
 
 
 
-
 // import React, { useState, useEffect } from 'react';
-// import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+// import { useSearchParams, useNavigate, Link, useParams } from 'react-router-dom'; // useParams əlavə olundu
 // import { useQuery } from '@tanstack/react-query';
 // import { getStockDetails, getStockCandles } from '../services/stockService';
 // import { getAllArticles } from '../services/articleService';
 // import { AreaChart, Area, Tooltip, ResponsiveContainer, YAxis } from 'recharts';
-// import { io } from 'socket.io-client'; // Socket bağlantısı üçün əlavə edildi
+// import { io } from 'socket.io-client';
 
 // const Learn: React.FC = () => {
+//   const { slug } = useParams<{ slug?: string }>(); // URL-dən məqalə slug-ını tuturuq
 //   const [searchParams] = useSearchParams();
 //   const navigate = useNavigate();
 //   const stockSymbol = searchParams.get('stock');
 //   const [investment, setInvestment] = useState<number>(250);
-  
-//   // Canlı qiyməti saxlamaq üçün yeni state
 //   const [livePrice, setLivePrice] = useState<number | null>(null);
 
-//   // Səhm simvolu dəyişəndə həm səhifəni yuxarı qaldırırıq, həm də köhnə canlı qiyməti sıfırlayırıq
 //   useEffect(() => {
 //     window.scrollTo(0, 0);
 //     setLivePrice(null); 
-//   }, [stockSymbol]);
+//   }, [stockSymbol, slug]);
 
-//   // WebSocket Dinləyicisi (Yalnız səhm analizi açıq olduqda işə düşür)
+//   // WebSocket Dinləyicisi
 //   useEffect(() => {
 //     if (!stockSymbol) return;
 
-//     // Backend serverimizə qoşuluruq
 //     const socket = io('http://localhost:3000');
-
-//     // Serverdən gələn anlıq qiymətləri qəbul edirik
 //     socket.on('stockPriceUpdate', (data: { symbol: string; price: number }) => {
-//       // Əgər gələn data hazırda ekranda baxdığımız səhmə aiddirsə, qiyməti yeniləyirik
 //       if (data.symbol === stockSymbol.toUpperCase()) {
 //         setLivePrice(data.price);
 //       }
 //     });
 
-//     // İstifadəçi səhifədən çıxanda və ya başqa səhmə keçəndə köhnə bağlantını qatır
 //     return () => {
 //       socket.disconnect();
 //     };
@@ -60,21 +52,26 @@
 //     enabled: !!stockSymbol,
 //   });
 
-//   // 3. MongoDB-dən məqalələri çəkən yeni sorğu
+//   // 3. Bütün məqalələri çəkən sorğu
 //   const { data: articlesRes, isLoading: articlesLoading } = useQuery({
 //     queryKey: ['articles'],
 //     queryFn: getAllArticles,
-//     enabled: !stockSymbol,
 //   });
 
 //   const stock = stockRes?.data;
 //   const articles = articlesRes?.data || [];
+
+//   // Əgər URL-də slug varsa, həmin məqaləni massivdən tapırıq
+//   const currentArticle = articles.find((art: any) => art.slug === slug);
 
 //   const chartData = candleRes?.data?.t.map((time: number, index: number) => ({
 //     date: new Date(time * 1000).toLocaleDateString(),
 //     price: candleRes.data.c[index]
 //   })) || [];
 
+//   // ------------------------------------------
+//   // KOMPONENT 1: SƏHM ANALİZİ
+//   // ------------------------------------------
 //   const StockAnalysis = () => {
 //     if (detailsLoading || candlesLoading) return (
 //       <div className="flex flex-col items-center justify-center py-40 space-y-4">
@@ -85,26 +82,23 @@
 
 //     if (!stock) return <GeneralArticle />;
 
-//     // EKRANDA GÖSTƏRİLƏCƏK QIYMƏT: Əgər soketdən canlı məlumat gəlibsə onu, yoxdursa API-dan gələn ilkin qiyməti götürürük
 //     const currentDisplayPrice = livePrice !== null ? livePrice : stock.currentPrice;
-
 //     const isPositive = currentDisplayPrice >= stock.previousClose;
 //     const priceChange = (currentDisplayPrice - stock.previousClose).toFixed(2);
 
 //     return (
 //       <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
 //         <button
-//           onClick={() => navigate('/explore')}
+//           onClick={() => navigate('/learn')}
 //           className="group flex items-center gap-2 text-gray-400 hover:text-black text-[10px] font-black uppercase tracking-[2px] transition-all"
 //         >
-//           <span className="group-hover:-translate-x-1 transition-transform">←</span> Bazara qayıt
+//           <span className="group-hover:-translate-x-1 transition-transform">←</span> Təlim Mərkəzinə Qayıt
 //         </button>
 
 //         <div className="flex flex-col xl:flex-row justify-between gap-8">
 //           <div className="space-y-4">
 //             <div className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[3px] text-gray-400">
 //               <span>${stock.symbol}</span>
-//               {/* Canlı döyünən yaşıl nöqtə effekti */}
 //               <span className="relative flex h-2 w-2">
 //                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
 //                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -113,7 +107,6 @@
 //             </div>
 //             <h1 className="text-6xl md:text-8xl font-black tracking-tighter text-gray-900">{stock.symbol}</h1>
 //             <div className="flex items-end gap-4">
-//               {/* Qiymət bura bağlanıb və anlıq dəyişəcək */}
 //               <span className="text-5xl font-black text-gray-900">${currentDisplayPrice.toFixed(2)}</span>
 //               <div className={`px-4 py-2 rounded-2xl border font-black text-sm transition-colors duration-300 ${isPositive ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-red-50 border-red-100 text-red-600'}`}>
 //                 {isPositive ? '▲' : '▼'} {Math.abs(Number(priceChange))}
@@ -125,7 +118,7 @@
 //           </button>
 //         </div>
 
-//         {/* Chart Section */}
+//         {/* Chart */}
 //         <div className="bg-white rounded-[40px] p-6 md:p-10 border border-gray-100 shadow-sm">
 //           <div className="h-64 md:h-[400px] w-full">
 //             <ResponsiveContainer width="100%" height="100%">
@@ -144,7 +137,7 @@
 //           </div>
 //         </div>
 
-//         {/* Stats Grid */}
+//         {/* Stats */}
 //         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 //           <div className="bg-white rounded-[40px] p-8 border border-gray-100 space-y-6">
 //             <h3 className="text-3xl font-black text-gray-900">Bazar Statistikası</h3>
@@ -177,6 +170,52 @@
 //     );
 //   };
 
+//   // ------------------------------------------
+//   // KOMPONENT 2: TƏK MƏQALƏNİN DETALI (Bərpa Olundu)
+//   // ------------------------------------------
+//   const ArticleDetail = () => {
+//     if (!currentArticle) {
+//       return (
+//         <div className="text-center py-20 font-black text-gray-400 uppercase tracking-widest text-xs">
+//           Məqalə tapılmadı. <Link to="/learn" className="text-emerald-500 underline">Geri qayıt</Link>
+//         </div>
+//       );
+//     }
+
+//     return (
+//       <div className="max-w-3xl mx-auto py-12 space-y-8 animate-in fade-in duration-700">
+//         <button
+//           onClick={() => navigate('/learn')}
+//           className="group flex items-center gap-2 text-gray-400 hover:text-black text-[10px] font-black uppercase tracking-[2px] transition-all"
+//         >
+//           <span className="group-hover:-translate-x-1 transition-transform">←</span> Bütün dərslərə qayıt
+//         </button>
+
+//         <div className="space-y-4">
+//           <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-3 py-1 rounded-full">
+//             {currentArticle.category}
+//           </span>
+//           <h1 className="text-4xl md:text-6xl font-black text-gray-900 tracking-tighter leading-none">
+//             {currentArticle.title}
+//           </h1>
+//           <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">
+//             Yaradılma tarixi: {new Date(currentArticle.createdAt || Date.now()).toLocaleDateString()}
+//           </p>
+//         </div>
+
+//         <hr className="border-gray-200" />
+
+//         {/* Məqalə mətni bura basılır */}
+//         <div className="text-gray-800 text-lg leading-relaxed space-y-6 font-medium whitespace-pre-line">
+//           {currentArticle.content}
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   // ------------------------------------------
+//   // KOMPONENT 3: ÜMUMİ MƏQALƏ SİYAHISI və SİMULYATOR
+//   // ------------------------------------------
 //   const GeneralArticle = () => (
 //     <div className="max-w-4xl mx-auto py-12 animate-in fade-in duration-1000">
 //       <div className="text-center space-y-6 mb-16">
@@ -211,6 +250,7 @@
 //         )}
 //       </div>
 
+//       {/* Simulyator */}
 //       <div className="bg-black rounded-[60px] p-10 md:p-14 text-white space-y-10">
 //         <div className="flex justify-between items-center">
 //           <h3 className="text-3xl font-black italic text-emerald-400">Gəlir Simulyatoru</h3>
@@ -230,10 +270,14 @@
 //     </div>
 //   );
 
+//   // ------------------------------------------
+//   // ASAS RENDERING MƏNTİQİ
+//   // ------------------------------------------
 //   return (
 //     <main className="min-h-screen bg-[#fbf8f2] pt-24 pb-20 px-4 sm:px-6 font-inter antialiased">
 //       <div className="max-w-6xl mx-auto">
-//         {stockSymbol ? <StockAnalysis /> : <GeneralArticle />}
+//         {/* Əgər stock query-si varsa, analizi göstər. Əgər yox, URL-də slug varsa məqaləni aç. Heç biri yoxdursa ana siyahını göstər. */}
+//         {stockSymbol ? <StockAnalysis /> : slug ? <ArticleDetail /> : <GeneralArticle />}
 //       </div>
 //     </main>
 //   );
@@ -243,7 +287,7 @@
 
 
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link, useParams } from 'react-router-dom'; // useParams əlavə olundu
+import { useSearchParams, useNavigate, Link, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { getStockDetails, getStockCandles } from '../services/stockService';
 import { getAllArticles } from '../services/articleService';
@@ -260,14 +304,22 @@ const Learn: React.FC = () => {
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    setLivePrice(null); 
+    setLivePrice(null);
   }, [stockSymbol, slug]);
 
-  // WebSocket Dinləyicisi
+  // WebSocket Dinləyicisi (Canlı və Lokal mühitə tam uyğunlaşdırıldı)
   useEffect(() => {
     if (!stockSymbol) return;
 
-    const socket = io('http://localhost:3000');
+    // Canlı mühitdədirsə Render linkinə bağlan, yoxsa local-a
+    const SOCKET_URL = import.meta.env.PROD 
+      ? 'https://sehmaz-fullstack.onrender.com' 
+      : 'http://localhost:3000';
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket'],
+    });
+
     socket.on('stockPriceUpdate', (data: { symbol: string; price: number }) => {
       if (data.symbol === stockSymbol.toUpperCase()) {
         setLivePrice(data.price);
@@ -412,7 +464,7 @@ const Learn: React.FC = () => {
   };
 
   // ------------------------------------------
-  // KOMPONENT 2: TƏK MƏQALƏNİN DETALI (Bərpa Olundu)
+  // KOMPONENT 2: TƏK MƏQALƏNİN DETALI
   // ------------------------------------------
   const ArticleDetail = () => {
     if (!currentArticle) {
@@ -512,12 +564,11 @@ const Learn: React.FC = () => {
   );
 
   // ------------------------------------------
-  // ASAS RENDERING MƏNTİQİ
+  // ƏSAS RENDERING MƏNTİQİ
   // ------------------------------------------
   return (
     <main className="min-h-screen bg-[#fbf8f2] pt-24 pb-20 px-4 sm:px-6 font-inter antialiased">
       <div className="max-w-6xl mx-auto">
-        {/* Əgər stock query-si varsa, analizi göstər. Əgər yox, URL-də slug varsa məqaləni aç. Heç biri yoxdursa ana siyahını göstər. */}
         {stockSymbol ? <StockAnalysis /> : slug ? <ArticleDetail /> : <GeneralArticle />}
       </div>
     </main>
