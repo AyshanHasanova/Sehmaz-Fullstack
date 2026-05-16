@@ -15,38 +15,18 @@ dotenv.config({ path: "config/config.env" });
 const app = express();
 const httpServer = createServer(app);
 
-// İCAZƏ VERİLƏN SABİT LİNKLƏR
-const allowedOrigins = [
-    'http://localhost:5173', 
-    'https://sehmaz-v1.vercel.app'
-];
-
-// Express üçün CORS tənzimləməsi
+// 1. EXPRESS ÜÇÜN CORS: Gələn bütün Vercel preview linklərinə tam icazə verir
 app.use(cors({
-    origin: function (origin, callback) {
-        // 1. Lokala, əsas sayta və ya Postman sorğularına icazə ver
-        // 2. Vercel-in dinamik yaratdığı bütün (.vercel.app) preview linklərinə avtomatik icazə ver
-        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
-            callback(null, true);
-        } else {
-            callback(new Error('CORS tərəfindən bloklandı: İcazə verilməyən domen.'));
-        }
-    },
+    origin: true, 
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Socket.io üçün də eyni dinamik CORS məntiqini tətbiq edirik
+// 2. SOCKET.IO ÜÇÜN CORS: Eyni şəkildə bütün bağlantılara icazə verir
 const io = new Server(httpServer, {
     cors: {
-        origin: function (origin, callback) {
-            if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
-                callback(null, true);
-            } else {
-                callback(new Error('CORS blocked by Socket.io'));
-            }
-        },
+        origin: true,
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowedHeaders: ['Content-Type', 'Authorization'],
         credentials: true
