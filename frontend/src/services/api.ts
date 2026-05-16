@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  // Bura diqqət: .env-i sildik, birbaşa canlı backend linkini yazdıq
+  // Başında heç bir dollar, mötərizə, import.meta olmadan, DÜZ xətt kimi dırnaq arasında yazılmalıdır:
   baseURL: 'https://sehmaz-fullstack.onrender.com/api', 
   headers: {
     'Content-Type': 'application/json',
