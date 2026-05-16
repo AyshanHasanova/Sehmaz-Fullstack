@@ -1,54 +1,45 @@
-import api from './api';
+import api from './api'; // YAXŞI OLMAQ ÜÇÜN CHECK ET
 
-/**
- * Bütün səhmlər
- */
+const BASE = '/stocks';
+
+// export const getAllStocks = async () => {
+//     const res = await api.get(BASE);
+//     return res.data;
+// };
+
+
+
 export const getAllStocks = async () => {
-    const response = await api.get('/api/stocks');
-    return response.data;
-};
+    console.log("🔥 STOCK SERVICE IS USED");
 
-/**
- * Detallar
- */
+    const res = await api.get('/stocks');
+    return res.data;
+};
 export const getStockDetails = async (symbol: string) => {
-    const response = await api.get(`/api/stocks/${symbol}`);
-    return response.data;
+    const res = await api.get(`${BASE}/${symbol}`);
+    return res.data;
 };
 
-/**
- * Candles
- */
 export const getStockCandles = async (symbol: string) => {
-    const response = await api.get(`/api/stocks/${symbol}/candles`);
-    return response.data;
+    const res = await api.get(`${BASE}/${symbol}/candles`);
+    return res.data;
 };
 
-/**
- * News
- */
 export const getStockNews = async (symbol: string) => {
-    const response = await api.get(`/api/stocks/${symbol}/news`);
-    return response.data;
+    const res = await api.get(`${BASE}/${symbol}/news`);
+    return res.data;
 };
 
-/**
- * Search
- */
 export const searchStocks = async (query: string) => {
-    const response = await api.get(`/api/stocks/search?q=${query}`);
-    return response.data;
+    const res = await api.get(`${BASE}/search?q=${query}`);
+    return res.data;
 };
 
-/**
- * Simulate
- */
 export const simulateInvestment = async (symbol: string, amount: number, date: string) => {
-    const response = await api.post('/api/stocks/simulate', {
+    const res = await api.post(`${BASE}/simulate`, {
         symbol: symbol.toUpperCase().trim(),
-        amount: Number(amount),
-        date,
+        amount,
+        date
     });
-
-    return response.data;
+    return res.data;
 };

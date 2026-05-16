@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://sehmaz-fullstack.onrender.com',
+  baseURL: 'https://sehmaz-fullstack.onrender.com/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -22,5 +22,5 @@ api.interceptors.request.use(
   },
   (error) => Promise.reject(error)
 );
-
+                                    
 export default api;
