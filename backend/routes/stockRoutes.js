@@ -40,7 +40,7 @@ import cors from 'cors';
 import {
     getStockDetails,
     getCandleDetails,
-    getStockNews,
+    getStockNews,              
     searchStocks,
     getAllStocks,
     simulateInvestment
