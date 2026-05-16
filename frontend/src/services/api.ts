@@ -1,14 +1,13 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: 'https://sehmaz-fullstack.onrender.com/api',
+  baseURL: 'https://sehmaz-fullstack.onrender.com',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000,
 });
 
-// BURANI ƏLAVƏ ET
 api.interceptors.request.use(
   (config) => {
     console.log('FULL REQUEST URL:', config.baseURL + config.url);
