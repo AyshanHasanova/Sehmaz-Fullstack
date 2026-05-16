@@ -1,12 +1,14 @@
-import axios from 'axios';
-import type { Article } from '../types/index'; // 'type' açar sözünü əlavə etmək bəzən xətanı silir
+// Köhnə birbaşa axios importunu sil və öz yaratdığın api instansiyasını gətir
+import api from './api'; 
+import type { Article } from '../types/index';
 
-const API_URL = 'http://localhost:3000/api/articles';
-
+// API_URL artıq api instansiyasının daxilindəki baseURL-dən (/api) sonrasını götürəcək
 export const getAllArticles = async () => {
-  return await axios.get<Article[]>(API_URL);
+  const response = await api.get<Article[]>('/articles');
+  return response; // data-nı useQuery daxilində (.data) ilə oxuyursan onsuz da
 };
 
 export const getArticleBySlug = async (slug: string) => {
-  return await axios.get<Article>(`${API_URL}/${slug}`);
+  const response = await api.get<Article>(`/articles/${slug}`);
+  return response;
 };
