@@ -10,3 +10,4 @@ export const connectDatabase = ()=>{
         console.log(`Database ile elaqe quruldu${con?.connection?.host}`)
     })
 }
+
